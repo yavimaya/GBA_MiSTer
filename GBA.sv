@@ -118,15 +118,23 @@ module emu
 	// 1 - D-/TX
 	// 2..6 - USR2..USR6
 	// Set USER_OUT to 1 to read from USER_IN.
-	input   [6:0] USER_IN,
-	output  [6:0] USER_OUT,
+	output	USER_OSD,
+	output	USER_MODE,
+	input	[7:0] USER_IN,
+	output	[7:0] USER_OUT,
 
 	input         OSD_STATUS
 );
 
 assign ADC_BUS  = 'Z;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
-assign USER_OUT = '1;
+
+wire   joy_split, joy_mdsel;
+wire   [5:0] joy_in = {USER_IN[6],USER_IN[3],USER_IN[5],USER_IN[7],USER_IN[1],USER_IN[2]};
+assign USER_OUT  = |status[63:62] ? {3'b111,joy_split,3'b111,joy_mdsel} : '1;
+assign USER_MODE = |status[63:62] ;
+assign USER_OSD  = joydb9md_1[7] & joydb9md_1[5];
+
 
 assign AUDIO_S   = 1;
 assign AUDIO_MIX = status[8:7];
@@ -169,10 +177,11 @@ wire reset = RESET | buttons[1] | status[0] | cart_download | bk_loading | hold_
 parameter CONF_STR = {
 	"GBA;;",
 	"FS,GBA;",
-   "-;",
+ "-;",
    "C,Cheats;",
 	"H1O6,Cheats Enabled,Yes,No;",
-	"-;",
+	"oUV,Serial SNAC DB9MD,Off,1 Player,2 Players;",
+"-;",
 	"D0RC,Reload Backup RAM;",
 	"D0RD,Save Backup RAM;",
 	"D0ON,Autosave,Off,On;",
@@ -186,7 +195,7 @@ parameter CONF_STR = {
    "OJ,Flickerblend,Off,On;",
    "OK,Spritelimit,Off,On;",
 	"O78,Stereo Mix,None,25%,50%,100%;", 
-	"-;",
+"-;",
 	"OEF,Storage,Auto,SDRAM,DDR3;",
 	"D5O5,Pause when OSD is open,Off,On;",
 	"H2OG,Turbo,Off,On;",
@@ -209,7 +218,7 @@ parameter CONF_STR = {
 };
 
 wire  [1:0] buttons;
-wire [31:0] status;
+wire [63:0] status;
 wire [15:0] status_menumask = {status[27], cart_loaded, |cart_type, force_turbo, ~gg_active, ~bk_ena};
 wire        forced_scandoubler;
 reg  [31:0] sd_lba;
@@ -230,11 +239,40 @@ wire        ioctl_wr;
 wire  [7:0] ioctl_index;
 reg         ioctl_wait = 0;
 
-wire [12:0] joy;
+wire [12:0] joy_USB;
 wire [10:0] ps2_key;
 
 wire [21:0] gamma_bus;
 wire [15:0] sdram_sz;
+
+wire [12:0] joy = |status[63:62] ? {
+	joydb9md_1[5], // RW		-> 11 * C
+	joydb9md_1[11],// FF		-> 1O * Z
+	joydb9md_1[7], // _start_1	-> 9 * START
+	joydb9md_1[8] | (joydb9md_1[7] & joydb9md_1[4]),// Select -> 8 * MODE or START + B
+	joydb9md_1[10],// btn_R		-> 7 * Y
+	joydb9md_1[9], // btn_L		-> 6 * X
+	joydb9md_1[4], // btn_B		-> 5 * B
+	joydb9md_1[6], // btn_A		-> 4 * A
+	joydb9md_1[3], // btn_up	-> 3 * U
+	joydb9md_1[2], // btn_down	-> 2 * D
+	joydb9md_1[1], // btn_left	-> 1 * L
+	joydb9md_1[0], // btn_righ	-> 0 * R 
+	} 
+: joy_USB;
+
+
+reg [15:0] joydb9md_1,joydb9md_2;
+joy_db9md joy_db9md
+(
+  .clk       ( clk_sys    ), //35-50MHz
+  .joy_split ( joy_split  ),
+  .joy_mdsel ( joy_mdsel  ),
+  .joy_in    ( joy_in     ),
+  .joystick1 ( joydb9md_1 ),
+  .joystick2 ( joydb9md_2 )	  
+);
+
 
 hps_io #(.STRLEN($size(CONF_STR)>>3), .WIDE(1)) hps_io
 (
@@ -245,7 +283,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3), .WIDE(1)) hps_io
 	.buttons(buttons),
 	.forced_scandoubler(forced_scandoubler),
 
-	.joystick_0(joy),
+	.joystick_0(joy_USB),
+	.joy_raw({joydb9md_1[4],joydb9md_1[6],joydb9md_1[3:0]}),
 	.ps2_key(ps2_key),
 
 	.status(status),
@@ -874,7 +913,7 @@ video_mixer #(.LINE_LENGTH(520), .GAMMA(1)) video_mixer
 (
 	.*,
 
-	.clk_vid(CLK_VIDEO),
+	.clk_vid(CLK_VIDEO), //48MHz
 	.ce_pix_out(CE_PIXEL),
 
 	.scanlines(0),
