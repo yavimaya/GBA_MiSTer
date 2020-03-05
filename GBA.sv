@@ -181,6 +181,7 @@ parameter CONF_STR = {
    "C,Cheats;",
 	"H1O6,Cheats Enabled,Yes,No;",
 	"oUV,Serial SNAC DB9MD,Off,1 Player,2 Players;",
+	"oT,Buttons Config.,Option 1,Option 2;",
 "-;",
 	"D0RC,Reload Backup RAM;",
 	"D0RD,Save Backup RAM;",
@@ -245,20 +246,35 @@ wire [10:0] ps2_key;
 wire [21:0] gamma_bus;
 wire [15:0] sdram_sz;
 
-wire [12:0] joy = |status[63:62] ? {
-	joydb9md_1[5], // RW		-> 11 * C
-	joydb9md_1[11],// FF		-> 1O * Z
-	joydb9md_1[7], // _start_1	-> 9 * START
+wire [12:0] joy = |status[63:62] ? 
+	!status[61] ? {
+	joydb9md_1[11],// RW		-> 11 * Z
+	joydb9md_1[9], // FF		-> 1O * X
+	joydb9md_1[7], // start		-> 9 * START
 	joydb9md_1[8] | (joydb9md_1[7] & joydb9md_1[4]),// Select -> 8 * MODE or START + B
-	joydb9md_1[10],// btn_R		-> 7 * Y
-	joydb9md_1[9], // btn_L		-> 6 * X
-	joydb9md_1[4], // btn_B		-> 5 * B
-	joydb9md_1[6], // btn_A		-> 4 * A
+	joydb9md_1[5], // btn_R		-> 7 * C
+	joydb9md_1[10],// btn_L		-> 6 * Y
+	joydb9md_1[6], // btn_B		-> 5 * A
+	joydb9md_1[4], // btn_A		-> 4 * B
 	joydb9md_1[3], // btn_up	-> 3 * U
 	joydb9md_1[2], // btn_down	-> 2 * D
 	joydb9md_1[1], // btn_left	-> 1 * L
 	joydb9md_1[0], // btn_righ	-> 0 * R 
-	} 
+	} :
+	{
+	joydb9md_1[10],// RW		-> 11 * Y
+	joydb9md_1[9], // FF		-> 1O * X
+	joydb9md_1[7], // start		-> 9 * START
+	joydb9md_1[8] | (joydb9md_1[7] & joydb9md_1[4]),// Select -> 8 * MODE or START + B
+	joydb9md_1[5], // btn_R		-> 7 * C
+	joydb9md_1[11],// btn_L		-> 6 * Z
+	joydb9md_1[6], // btn_B		-> 5 * A
+	joydb9md_1[4], // btn_A		-> 4 * B
+	joydb9md_1[3], // btn_up	-> 3 * U
+	joydb9md_1[2], // btn_down	-> 2 * D
+	joydb9md_1[1], // btn_left	-> 1 * L
+	joydb9md_1[0], // btn_righ	-> 0 * R 
+	}
 : joy_USB;
 
 
