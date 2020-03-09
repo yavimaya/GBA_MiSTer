@@ -259,7 +259,7 @@ wire [12:0] joy = |status[63:62] ?
 	joydb9md_1[3], // btn_up	-> 3 * U
 	joydb9md_1[2], // btn_down	-> 2 * D
 	joydb9md_1[1], // btn_left	-> 1 * L
-	joydb9md_1[0], // btn_righ	-> 0 * R 
+	joydb9md_1[0], // btn_right	-> 0 * R 
 	} :
 	{
 	joydb9md_1[10],// RW		-> 11 * Y
@@ -273,7 +273,7 @@ wire [12:0] joy = |status[63:62] ?
 	joydb9md_1[3], // btn_up	-> 3 * U
 	joydb9md_1[2], // btn_down	-> 2 * D
 	joydb9md_1[1], // btn_left	-> 1 * L
-	joydb9md_1[0], // btn_righ	-> 0 * R 
+	joydb9md_1[0], // btn_right	-> 0 * R 
 	}
 : joy_USB;
 
@@ -304,7 +304,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3), .WIDE(1)) hps_io
 	.ps2_key(ps2_key),
 
 	.status(status),
-	.status_in({status[31:17],1'b0,status[15:0]}),
+	.status_in({status[63:17],1'b0,status[15:0]}),
 	.status_set(cart_download),	
 	.status_menumask(status_menumask),
 	.info_req(ss_info_req),
