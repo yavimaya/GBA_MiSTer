@@ -21,7 +21,7 @@ module osd
 	output reg    osd_status
 );
 
-parameter  OSD_COLOR    =  3'd4;
+parameter  OSD_COLOR    =  3'd0;
 
 localparam OSD_WIDTH    = 12'd256;
 localparam OSD_HEIGHT   = 12'd64;
